@@ -9,51 +9,81 @@ export class UserModel {
     this.gender = gender;
   }
 
-  // ❌ SRP: UserModel maneja datos y también persistencia
+  // ❌ SRP: la clase se encarga de guardar usuarios
+  // ❌ DIP: depende directamente de MySQL
   saveToDatabase(): void {
-    console.log(`Guardando usuario ${this.email} en la base de datos...`);
+    const db = new MySQLDatabase();
 
-    // ❌ OCP/DIP: está acoplado directamente a una implementación
-    // concreta de base de datos.
-    const database = new MySQLDatabase();
-
-    database.connect();
-    database.insert(
-      "users",
-      this.id,
-      this.email,
-      this.gender
+    db.connect();
+    db.execute(
+      `INSERT INTO users VALUES ('${this.id}', '${this.email}', '${this.gender}')`
     );
   }
 
-  // ❌ También mezcla lógica de negocio/presentación
-  sendWelcomeEmail(): void {
-    console.log(`Enviando email de bienvenida a ${this.email}`);
+  // ❌ SRP: también se encarga de enviar correos
+  sendEmail(): void {
+    console.log(`Enviando correo a ${this.email}`);
   }
 
-  // ❌ La clase conoce detalles de infraestructura
-  exportToJSON(): string {
-    return JSON.stringify({
-      id: this.id,
-      email: this.email,
-      gender: this.gender
-    });
+  // ❌ SRP: también genera reportes
+  generateReport(): string {
+    return `
+      ID: ${this.id}
+      Email: ${this.email}
+      Gender: ${this.gender}
+    `;
+  }
+
+  // ❌ OCP: si cambia el formato, hay que modificar esta clase
+  exportData(format: string): string {
+    if (format === "json") {
+      return JSON.stringify(this);
+    }
+
+    if (format === "xml") {
+      return `<user>
+        <id>${this.id}</id>
+        <email>${this.email}</email>
+        <gender>${this.gender}</gender>
+      </user>`;
+    }
+
+    throw new Error("Formato no soportado");
   }
 }
 
+// ❌ DIP: implementación concreta
 class MySQLDatabase {
   connect(): void {
     console.log("Conectando a MySQL...");
   }
 
-  insert(
-    table: string,
-    id: string,
-    email: string,
-    gender: string
-  ): void {
-    console.log(
-      `INSERT INTO ${table} VALUES (${id}, ${email}, ${gender})`
-    );
+  execute(query: string): void {
+    console.log(`Ejecutando: ${query}`);
   }
 }
+
+
+// ❌ ISP: interfaz demasiado grande
+interface UserOperations {
+  save(): void;
+  delete(): void;
+  sendEmail(): void;
+  generateReport(): string;
+  exportToJSON(): string;
+}
+
+
+// ❌ LSP: AdminUser hereda de UserModel,
+// pero cambia el comportamiento esperado.
+export class AdminUser extends UserModel {
+
+  delete(): void {
+    throw new Error("Un administrador no puede eliminarse");
+  }
+
+  override saveToDatabase(): void {
+    throw new Error("Los administradores no se guardan de esta manera");
+  }
+}
+```
