@@ -6,11 +6,13 @@ export class OrderModel {
   public id: string;
   public amount: number;
   public paymentType: string;
+  public password: string;
 
-  constructor(id: string, amount: number, paymentType: string) {
+  constructor(id: string, amount: number, paymentType: string, password: string) {
     this.id = id;
     this.amount = amount;
     this.paymentType = paymentType;
+    this.password = password;
     
     // ❌ DIP: Instanciación rígida con 'new' dentro del modelo
     const db = new PostgreSQLDriver();
