@@ -1,24 +1,89 @@
-import { axios } from 'axios'; // ❌ Violación SRP
-
 export class UserModel {
   public id: string;
   public email: string;
   public gender: string;
-  public password: string; // ❌ Violación SRP: Almacenar contraseñas en texto plano
 
-  constructor(id: string, email: string, gender: string, password: string) {
+  constructor(id: string, email: string, gender: string) {
     this.id = id;
     this.email = email;
     this.gender = gender;
-    this.password = password;
   }
 
+  // ❌ SRP: la clase se encarga de guardar usuarios
+  // ❌ DIP: depende directamente de MySQL
   saveToDatabase(): void {
-    throw new Error("Not implemented"); // ❌ Violación LSP
+    const db = new MySQLDatabase();
+
+    db.connect();
+    db.execute(
+      `INSERT INTO users VALUES ('${this.id}', '${this.email}', '${this.gender}')`
+    );
   }
 
-  async sendEmail(): Promise<void> {
-    await axios.post('https://api.email.com/send'); // ❌ Violación SRP
+  // ❌ SRP: también se encarga de enviar correos
+  sendEmail(): void {
+    console.log(`Enviando correo a ${this.email}`);
   }
 
+  // ❌ SRP: también genera reportes
+  generateReport(): string {
+    return `
+      ID: ${this.id}
+      Email: ${this.email}
+      Gender: ${this.gender}
+    `;
+  }
+
+  // ❌ OCP: si cambia el formato, hay que modificar esta clase
+  exportData(format: string): string {
+    if (format === "json") {
+      return JSON.stringify(this);
+    }
+
+    if (format === "xml") {
+      return `<user>
+        <id>${this.id}</id>
+        <email>${this.email}</email>
+        <gender>${this.gender}</gender>
+      </user>`;
+    }
+
+    throw new Error("Formato no soportado");
+  }
 }
+
+// ❌ DIP: implementación concreta
+class MySQLDatabase {
+  connect(): void {
+    console.log("Conectando a MySQL...");
+  }
+
+  execute(query: string): void {
+    console.log(`Ejecutando: ${query}`);
+  }
+}
+
+
+// ❌ ISP: interfaz demasiado grande
+interface UserOperations {
+  save(): void;
+  delete(): void;
+  sendEmail(): void;
+  generateReport(): string;
+  exportToJSON(): string;
+}
+
+
+// ❌ LSP: AdminUser hereda de UserModel,
+// pero cambia el comportamiento esperado.
+export class AdminUser extends UserModel {
+
+  delete(): void {
+    throw new Error("Un administrador no puede eliminarse");
+  }
+
+  override saveToDatabase(): void {
+    throw new Error("Los administradores no se guardan de esta manera");
+  }
+}
+```
