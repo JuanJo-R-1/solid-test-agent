@@ -1,0 +1,1 @@
+node --env-file=.env .husky/solid-check.mjs

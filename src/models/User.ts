@@ -86,4 +86,3 @@ export class AdminUser extends UserModel {
     throw new Error("Los administradores no se guardan de esta manera");
   }
 }
-```
